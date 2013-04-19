@@ -18,7 +18,7 @@ struct IRrecv remote;
 struct decode_results {
   int decode_type; // NEC, SONY, RC5, UNKNOWN
   int panasonicAddress; // This is only used for decoding Panasonic data
-  uint32_t value; // Decoded value
+  int value; // Decoded value
   int bits; // Number of bits in decoded value
   int *rawbuf; // Raw intervals in .5 us ticks
   int rawlen; // Number of records in rawbuf.
@@ -30,6 +30,8 @@ void enableIRIn(int recvpin) {
   remote.rcvstate = STATE_IDLE;
   remote.rawlen = 0;
   remote.recvpin = recvpin;
+  results.decode_type=-1;
+  results.value=0;
   // set pin modes
   piThreadCreate (timerThread) ;
   pinMode(recvpin, INPUT);
