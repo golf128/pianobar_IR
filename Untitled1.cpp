@@ -34,7 +34,10 @@ void enableIRIn(int recvpin) {
   piThreadCreate (timeThread) ;
   pinMode(recvpin, INPUT);
 }
+uint32_t get_result(){
+return results->value ;
 
+}
 int MATCH_MARK(int measured_ticks, int desired_us) {
   return measured_ticks >= TICKS_LOW(desired_us + MARK_EXCESS) && measured_ticks <= TICKS_HIGH(desired_us + MARK_EXCESS);
 }
@@ -55,22 +58,22 @@ static PI_THREAD (timerThread)
   delayMicroseconds(50);
   uint8_t irdata = (uint8_t)digitalRead(remote->recvpin);
   remote->timer++; // One more 50us tick
-  if (remote->rawlen >= RAWBUF) 
+  if (remote->rawlen >= RAWBUF)
   {
     // Buffer overflow
     remote->rcvstate = STATE_STOP;
   }
-  switch(remote->rcvstate) 
+  switch(remote->rcvstate)
   {
 	case STATE_IDLE: // In the middle of a gap
-		if (irdata == MARK) 
+		if (irdata == MARK)
 		{
-		  if (remote->timer < GAP_TICKS) 
+		  if (remote->timer < GAP_TICKS)
 		  {
 			// Not big enough to be a gap.
 			remote->timer = 0;
 		  }
-		  else 
+		  else
 		  {
 			// gap just ended, record duration and start recording transmission
 			remote->rawlen = 0;
@@ -81,7 +84,7 @@ static PI_THREAD (timerThread)
 		}
 		break;
 	  case STATE_MARK: // timing MARK
-		if (irdata == SPACE) 
+		if (irdata == SPACE)
 		{   // MARK ended, record time
 		  remote->rawbuf[remote->rawlen++] = remote->timer;
 		  remote->timer = 0;
@@ -89,15 +92,15 @@ static PI_THREAD (timerThread)
 		}
 		break;
 	  case STATE_SPACE: // timing SPACE
-		if (irdata == MARK) 
+		if (irdata == MARK)
 		{ // SPACE just ended, record it
 		  remote->rawbuf[remote->rawlen++] = remote->timer;
 		  remote->timer = 0;
 		  remote->rcvstate = STATE_MARK;
 		}
-		else 
+		else
 		{ // SPACE
-		  if (remote->timer > GAP_TICKS) 
+		  if (remote->timer > GAP_TICKS)
 			{
 				// big SPACE, indicates gap between codes
 				// Mark current code as ready for processing
