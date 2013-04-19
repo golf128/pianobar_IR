@@ -24,13 +24,14 @@ struct decode_results {
   int rawlen; // Number of records in rawbuf.
 };
 struct decode_results results;
+static PI_THREAD (timerThread);
 // initialization
 void enableIRIn(int recvpin) {
   remote.rcvstate = STATE_IDLE;
   remote.rawlen = 0;
   remote.recvpin = recvpin;
   // set pin modes
-  piThreadCreate (timeThread) ;
+  piThreadCreate (timerThread) ;
   pinMode(recvpin, INPUT);
 }
 uint32_t get_result(){
@@ -76,7 +77,7 @@ static PI_THREAD (timerThread)
 		  {
 			// gap just ended, record duration and start recording transmission
 			remote.rawlen = 0;
-			remote.rawbuf[remote->rawlen++] = remote->timer;
+			remote.rawbuf[remote.rawlen++] = remote.timer;
 			remote.timer = 0;
 			remote.rcvstate = STATE_MARK;
 		  }
@@ -124,33 +125,33 @@ void resume() {
 }
 
 int decode() {
-  results.rawbuf = rawbuf;
-  results.rawlen = rawlen;
+  results.rawbuf = remote.rawbuf;
+  results.rawlen = remote.rawlen;
   if (remote.rcvstate != STATE_STOP) {
     return ERR;
   }
-  if (decodeNEC(results)) {
+  if (decodeNEC()) {
     return DECODED;
   }
-  if (decodeSony(results)) {
+  if (decodeSony()) {
     return DECODED;
   }
-  if (decodeSanyo(results)) {
+  if (decodeSanyo()) {
     return DECODED;
   }
-  if (decodeMitsubishi(results)) {
+  if (decodeMitsubishi()) {
     return DECODED;
   }
-  if (decodeRC5(results)) {
+  if (decodeRC5()) {
     return DECODED;
   }
-  if (decodeRC6(results)) {
+  if (decodeRC6()) {
     return DECODED;
   }
-    if (decodePanasonic(results)) {
+    if (decodePanasonic()) {
         return DECODED;
     }
-    if (decodeJVC(results)) {
+    if (decodeJVC()) {
         return DECODED;
     }
   resume();
@@ -158,7 +159,7 @@ int decode() {
 }
 
 // NECs have a repeat only 4 items long
-long decodeNEC() {
+int decodeNEC() {
   long data = 0;
   int offset = 1; // Skip first space
   // Initial mark
@@ -173,7 +174,7 @@ long decodeNEC() {
     results.decode_type = NEC;
     return DECODED;
   }
-  if (remote->rawlen < 2 * NEC_BITS + 4) {
+  if (remote.rawlen < 2 * NEC_BITS + 4) {
     return ERR;
   }
   // Initial space
@@ -181,7 +182,8 @@ long decodeNEC() {
     return ERR;
   }
   offset++;
-  for (int i = 0; i < NEC_BITS; i++) {
+ int i;
+  for (i = 0; i < NEC_BITS; i++) {
     if (!MATCH_MARK(results.rawbuf[offset], NEC_BIT_MARK)) {
       return ERR;
     }
@@ -204,7 +206,7 @@ long decodeNEC() {
   return DECODED;
 }
 
-long decodeSony() {
+int decodeSony() {
   long data = 0;
   if (remote.rawlen < 2 * SONY_BITS + 2) {
     return ERR;
@@ -255,7 +257,7 @@ long decodeSony() {
   return DECODED;
 }
 
-long decodeSanyo() {
+int decodeSanyo() {
   long data = 0;
   if (remote.rawlen < 2 * SANYO_BITS + 2) {
     return ERR;
@@ -311,7 +313,7 @@ long decodeSanyo() {
 }
 
 // Looks like Sony except for timings, 48 chars of data and time/space different
-long decodeMitsubishi() {
+int decodeMitsubishi() {
   long data = 0;
   if (remote.rawlen < 2 * MITSUBISHI_BITS + 2) {
     return ERR;
@@ -360,11 +362,11 @@ long decodeMitsubishi() {
 // t1 is the time interval for a single bit in microseconds.
 // Returns -1 for error (measured time interval is not a multiple of t1).
 int getRClevel( int *offset, int *used, int t1) {
-  if (*offset >= results,rawlen) {
+  if (*offset >= results.rawlen) {
     // After end of recorded buffer, assume SPACE.
     return SPACE;
   }
-  int width = result.rawbuf[*offset];
+  int width = results.rawbuf[*offset];
   int val = ((*offset) % 2) ? MARK : SPACE;
   int correction = (val == MARK) ? MARK_EXCESS : - MARK_EXCESS;
 
@@ -390,7 +392,7 @@ int getRClevel( int *offset, int *used, int t1) {
   return val;
 }
 
-long decodeRC5() {
+int decodeRC5() {
   if (remote.rawlen < MIN_RC5_SAMPLES + 2) {
     return ERR;
   }
@@ -398,13 +400,13 @@ long decodeRC5() {
   long data = 0;
   int used = 0;
   // Get start bits
-  if (getRClevel(results, &offset, &used, RC5_T1) != MARK) return ERR;
-  if (getRClevel(results, &offset, &used, RC5_T1) != SPACE) return ERR;
-  if (getRClevel(results, &offset, &used, RC5_T1) != MARK) return ERR;
+  if (getRClevel(&offset, &used, RC5_T1) != MARK) return ERR;
+  if (getRClevel(&offset, &used, RC5_T1) != SPACE) return ERR;
+  if (getRClevel(&offset, &used, RC5_T1) != MARK) return ERR;
   int nbits;
   for (nbits = 0; offset < remote.rawlen; nbits++) {
-    int levelA = getRClevel(results, &offset, &used, RC5_T1);
-    int levelB = getRClevel(results, &offset, &used, RC5_T1);
+    int levelA = getRClevel(&offset, &used, RC5_T1);
+    int levelB = getRClevel(&offset, &used, RC5_T1);
     if (levelA == SPACE && levelB == MARK) {
       // 1 bit
       data = (data << 1) | 1;
@@ -425,7 +427,7 @@ long decodeRC5() {
   return DECODED;
 }
 
-long decodeRC6() {
+int decodeRC6() {
   if (results.rawlen < MIN_RC6_SAMPLES) {
     return ERR;
   }
@@ -442,20 +444,20 @@ long decodeRC6() {
   long data = 0;
   int used = 0;
   // Get start bit (1)
-  if (getRClevel(results, &offset, &used, RC6_T1) != MARK) return ERR;
-  if (getRClevel(results, &offset, &used, RC6_T1) != SPACE) return ERR;
+  if (getRClevel(&offset, &used, RC6_T1) != MARK) return ERR;
+  if (getRClevel(&offset, &used, RC6_T1) != SPACE) return ERR;
   int nbits;
   for (nbits = 0; offset < results.rawlen; nbits++) {
     int levelA, levelB; // Next two levels
-    levelA = getRClevel(results, &offset, &used, RC6_T1);
+    levelA = getRClevel(&offset, &used, RC6_T1);
     if (nbits == 3) {
       // T bit is double wide; make sure second half matches
-      if (levelA != getRClevel(results, &offset, &used, RC6_T1)) return ERR;
+      if (levelA != getRClevel(&offset, &used, RC6_T1)) return ERR;
     }
-    levelB = getRClevel(results, &offset, &used, RC6_T1);
+    levelB = getRClevel(&offset, &used, RC6_T1);
     if (nbits == 3) {
       // T bit is double wide; make sure second half matches
-      if (levelB != getRClevel(results, &offset, &used, RC6_T1)) return ERR;
+      if (levelB != getRClevel(&offset, &used, RC6_T1)) return ERR;
     }
     if (levelA == MARK && levelB == SPACE) { // reversed compared to RC5
       // 1 bit
@@ -475,7 +477,7 @@ long decodeRC6() {
   results.decode_type = RC6;
   return DECODED;
 }
-long decodePanasonic() {
+int decodePanasonic() {
     unsigned long long data = 0;
     int offset = 1;
 
@@ -483,13 +485,13 @@ long decodePanasonic() {
         return ERR;
     }
     offset++;
-    if (!MATCH_MARK(results->rawbuf[offset], PANASONIC_HDR_SPACE)) {
+    if (!MATCH_MARK(results.rawbuf[offset], PANASONIC_HDR_SPACE)) {
         return ERR;
     }
     offset++;
-
+    int i;
     // decode address
-    for (int i = 0; i < PANASONIC_BITS; i++) {
+    for (i = 0; i < PANASONIC_BITS; i++) {
         if (!MATCH_MARK(results.rawbuf[offset++], PANASONIC_BIT_MARK)) {
             return ERR;
         }
@@ -508,7 +510,7 @@ long decodePanasonic() {
     results.bits = PANASONIC_BITS;
     return DECODED;
 }
-long decodeJVC() {
+int decodeJVC() {
     long data = 0;
     int offset = 1; // Skip first space
     // Check for repeat
@@ -525,7 +527,7 @@ long decodeJVC() {
         return ERR;
     }
     offset++;
-    if (remote->rawlen < 2 * JVC_BITS + 1 ) {
+    if (remote.rawlen < 2 * JVC_BITS + 1 ) {
         return ERR;
     }
     // Initial space
@@ -533,7 +535,8 @@ long decodeJVC() {
         return ERR;
     }
     offset++;
-    for (int i = 0; i < JVC_BITS; i++) {
+    int i;
+    for (i = 0; i < JVC_BITS; i++) {
         if (!MATCH_MARK(results.rawbuf[offset], JVC_BIT_MARK)) {
             return ERR;
         }
