@@ -34,10 +34,11 @@ void enableIRIn(int recvpin) {
   piThreadCreate (timerThread) ;
   pinMode(recvpin, INPUT);
 }
-uint32_t get_result(){
+int get_result(){
 return results.value ;
-
 }
+int get_type(){
+return results.decode_type;}
 int MATCH(int measured, int desired) {return measured >= TICKS_LOW(desired) && measured <= TICKS_HIGH(desired);}
 int MATCH_MARK(int measured_ticks, int desired_us) {return MATCH(measured_ticks, (desired_us + MARK_EXCESS));}
 int MATCH_SPACE(int measured_ticks, int desired_us) {return MATCH(measured_ticks, (desired_us - MARK_EXCESS));}

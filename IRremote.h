@@ -27,7 +27,7 @@
 #define JVC 8
 #define SANYO 9
 #define MITSUBISHI 10
-#define UNKNOWN -1
+#define UNKNOWN 11
 
 // Decoded value for NEC when a repeat code is received
 #define REPEAT 0xffffffff
