@@ -8,11 +8,11 @@
 #include"IRremote.c"
 
 int main(void) {
-//printf("Hello world  ");
+printf("Hello world  ");
 wiringPiSetup();
 pinMode(5,OUTPUT);
 int lcd1;
-lcd1=lcdInit(2,16,8,10,11,14,13,12,3,2,0,7,9);
+lcd1=lcdInit(2,16,8,11,10,14,13,12,3,2,0,7,9);
 enableIRIn(4);
 //printf(" %d  %d ",get_result(),get_type());
 lcdPosition(lcd1,0,0);
@@ -22,11 +22,11 @@ lcdPuts(lcd1,"Hi daveallenvw");
 for(;;)
 {//digitalWrite(5,0);
  if(decode())
- {//printf( "value= %d type= %d",get_result(),get_type());// digitalWrite(5,1);
+ {printf( "value= %d type= %d",get_result(),get_type());// digitalWrite(5,1);
   lcdPosition(lcd1,0,0);
-    lcdPuts(lcd1,""+get_result());
+    lcdPrintf(lcd1,"value = %d ",get_result());
 lcdPosition(lcd1,0,1);
-lcdPuts(lcd1,""+get_type());
+lcdPrintf(lcd1,"type = %d       ",get_type());
 
   resume();
 }
