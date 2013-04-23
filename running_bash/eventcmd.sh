@@ -11,8 +11,7 @@ case "$1" in
 songstart)
 rm /home/pi/pianobar_IR/running_bash/out
 #cat > /home/pi/.config/pianobar/script/out
-echo -e "$title\n$artist\n$stationName" >> /home/pi/pianobar_IR/running_bash/out
-./writelcd
-#python /home/pi/.config/pianobar/scripts/ParseAndWrite.py
+echo -e "$title\n$artist" >> /home/pi/pianobar_IR/running_bash/out
+sudo /home/pi/pianobar_IR/running_bash/writelcd
 
 esac
