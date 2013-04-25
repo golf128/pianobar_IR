@@ -1,9 +1,10 @@
-#include "IRremote.h"
+#include "/home/pi/pianobar_IR/IRremote.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include "wiringPi.h"
+#include<pthread.h>
 ////////////////////////////////////////////////////////////////////////
 struct IRrecv
 {
@@ -23,8 +24,11 @@ struct decode_results {
   int *rawbuf; // Raw intervals in .5 us ticks
   int rawlen; // Number of records in rawbuf.
 };
+int complete =1;
 struct decode_results results;
-static PI_THREAD (timerThread);
+void work(void);
+//static PI_THREAD (xx);
+//int temp=0;
 // initialization
 void enableIRIn(int recvpin) {
   remote.rcvstate = STATE_IDLE;
@@ -33,8 +37,10 @@ void enableIRIn(int recvpin) {
   results.decode_type=-1;
   results.value=0;
   // set pin modes
-  piThreadCreate (timerThread) ;
+  //piThreadCreate (xx) ;
   pinMode(recvpin, INPUT);
+  wiringPiISR(recvpin,INT_EDGE_FALLING,&work);
+// pthread_exit(NULL);
 }
 int get_result(){
 return results.value ;
@@ -45,7 +51,7 @@ int MATCH(int measured, int desired) {return measured >= TICKS_LOW(desired) && m
 int MATCH_MARK(int measured_ticks, int desired_us) {return MATCH(measured_ticks, (desired_us + MARK_EXCESS));}
 int MATCH_SPACE(int measured_ticks, int desired_us) {return MATCH(measured_ticks, (desired_us - MARK_EXCESS));}
 
-static PI_THREAD (timerThread)
+void work(void)
 {
 // TIMER2 interrupt code to collect raw data.
 // Widths of alternating SPACE, MARK are recorded in rawbuf.
@@ -54,8 +60,10 @@ static PI_THREAD (timerThread)
 // First entry is the SPACE between transmissions.
 // As soon as a SPACE gets long, ready is set, state switches to IDLE, timing of SPACE continues.
 // As soon as first MARK arrives, gap width is recorded, ready is cleared, and new logging starts
+  if(complete==0)return;
+  //int complete=1;
   piHiPri (50) ;
-  for(;;)
+  while(complete)
 {
   delayMicroseconds(50);
   uint8_t irdata = (uint8_t)digitalRead(remote.recvpin);
@@ -113,9 +121,10 @@ static PI_THREAD (timerThread)
 		}
 		break;
 	  case STATE_STOP: // waiting, measuring gap
-		if (irdata == MARK) { // reset gap timer
+		if (irdata == MARK)  // reset gap timer
 		  remote.timer = 0;
-		}
+		complete=0;
+		
 		break;
   }
   }
@@ -124,6 +133,7 @@ static PI_THREAD (timerThread)
 void resume() {
   remote.rcvstate = STATE_IDLE;
   remote.rawlen = 0;
+  complete=1;
 }
 
 int decode() {

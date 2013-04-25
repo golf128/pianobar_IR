@@ -13,5 +13,6 @@ rm /home/pi/pianobar_IR/running_bash/out
 #cat > /home/pi/.config/pianobar/script/out
 echo -e "$title\n$artist" >> /home/pi/pianobar_IR/running_bash/out
 sudo /home/pi/pianobar_IR/running_bash/writelcd
-
+#source /home/pi/pianobar_IR/running_bash/test.sh
+#sleep 2
 esac
