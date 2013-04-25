@@ -37,7 +37,7 @@ int main(void) {
         while(temp) {
             //printf("wtf");
             if(decode()&&get_result()!=-1){
-            fprintf(fd2, "%d %s\n",get_result(),key);
+            fprintf(fd2, "%s %d\n",key,get_result());
             lcdPosition(lcd1,0,0);
             lcdPrintf(lcd1,"complete wait for next key");
             delay(1500);
