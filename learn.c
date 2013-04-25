@@ -25,7 +25,7 @@ int main(void) {
      enableIRIn(4);
     while(1) {
         if(decode())
-          {resume();if(get_result!=-1)  break;}
+          {resume();if(get_result()!=-1)  break;}
     }
     delay(7000);
     while(fscanf(fd, "%s", key) != EOF) {
