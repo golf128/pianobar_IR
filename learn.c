@@ -9,7 +9,6 @@
 #include<string.h>
 
 int main(void) {
-    //printf("Hello world  ");
     wiringPiSetup();
     char key[1];
     int lcd1,value;
@@ -17,7 +16,6 @@ int main(void) {
     fd = fopen("input.txt","r");
     fd2 = fopen("config.txt","w");
     lcd1=lcdInit(2,16,8,11,10,14,13,12,3,2,0,7,9);
-    //enableIRIn(4);
     lcdPosition(lcd1,0,0);
     lcdPuts(lcd1,"learning process");
     lcdPosition(lcd1,0,1);
@@ -27,7 +25,7 @@ int main(void) {
         if(decode())
           {resume();if(get_result()!=-1)  break;}
     }
-    delay(7000);
+    delay(3000);
     while(fscanf(fd, "%s", key) != EOF) {
         int temp=1;
         lcdPosition(lcd1,0,0);
@@ -35,9 +33,8 @@ int main(void) {
         lcdPosition(lcd1,0,1);
         lcdPrintf(lcd1,"press for learn ");
         while(temp) {
-            //printf("wtf");
             if(decode()&&get_result()!=-1){
-            fprintf(fd2, "%d %s\n",get_result(),key);
+            fprintf(fd2, "%s\n%d\n",key,get_result());
             lcdPosition(lcd1,0,0);
             lcdPrintf(lcd1,"complete wait for next key");
             delay(1500);
