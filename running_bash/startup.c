@@ -9,9 +9,8 @@
 #include<string.h>
 
 int main(void) {
-    //printf("xx");
     wiringPiSetup();
-    char key[100],tmpkey[1];
+    char key[100];
     int fvalue[100];
     int lcd1,value,temp=0,i;
     FILE *fd = NULL,*fd2 = NULL;
@@ -25,11 +24,22 @@ int main(void) {
     //lcdPuts(lcd1,"learning process");
     //lcdPosition(lcd1,0,1);
     //lcdPuts(lcd1,"press anykey");
-    while(fscanf(fd, "%s",tmpkey) != EOF) {
-        key[temp]=tmpkey;
-        fscanf(fd,"%d",&fvalue[temp]);
-        temp++;
-    }
+FILE *fr; /* declare the file pointer */
+int n;
+char line[80];
+char tmp[1];
+int num;
+fr = fopen ("test.txt", "r"); /* open the file for reading */
+while(fgets(line, 80, fr) != NULL)
+{
+sscanf (line, "%s", tmp);
+key[temp]=tmp;
+fgets(line, 80, fr);
+sscanf (line, "%d", &num);
+fvalue[temp]=num;
+temp++;}
+fclose(fr);
+
     enableIRIn(4);
     //while(1) {
       //  if(decode())
@@ -49,7 +59,7 @@ int main(void) {
             {
                 if(fvalue[i]==get_result())
                 {  tmpkey[1]=key[i];
-               fprintf(fd2,"%s",tmpkey[1]);// >> /home/pi/.config/pianobar/ctl; 
+               fprintf(fd2,"%s",tmpkey[1]);// >> /home/pi/.config/pianobar/ctl;
             }}
 
             //fprintf(fd2, "%d %s\n",get_result(),key);
